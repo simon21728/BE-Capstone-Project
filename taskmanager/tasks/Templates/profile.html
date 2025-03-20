@@ -1,0 +1,14 @@
+<!-- templates/registration/profile.html -->
+
+<h2>User Profile</h2>
+<p>Username: {{ user.username }}</p>
+<p>Email: {{ user.email }}</p>
+
+<h3>Your Tasks</h3>
+<ul>
+    {% for task in tasks %}
+        <li>{{ task.title }} - Due: {{ task.due_date }} - Status: {{ task.status }}</li>
+    {% endfor %}
+</ul>
+<a href="{% url 'update_user' %}">Edit Profile</a>
+<a href="{% url 'delete_user' %}">Delete Account</a>

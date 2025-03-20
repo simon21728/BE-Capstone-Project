@@ -1,0 +1,8 @@
+<!-- templates/registration/delete_user.html -->
+
+<h2>Are you sure you want to delete your account?</h2>
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit">Delete</button>
+</form>
+<a href="{% url 'user_profile' %}">Cancel</a>
