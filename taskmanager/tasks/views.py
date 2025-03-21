@@ -1,3 +1,4 @@
+from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -9,24 +10,45 @@ from .serializers import TaskSerializer, UserSerializer, LoginSerializer, UserRe
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .forms import UserRegistrationForm
+from rest_framework import serializers
+from rest_framework.decorators import action
+from rest_framework.routers import DefaultRouter
 
 
-class UserRegistrationView(APIView):
-    permission_classes = [AllowAny]
+# ViewSet for User
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()  # All users
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
 
-    def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        """Override to return only the current user or allow admins to see all"""
+        if self.request.user.is_staff:  # If the user is an admin, allow all users to be accessed
+            return User.objects.all()
+        return User.objects.filter(id=self.request.user.id)  # Only return the logged-in user
 
 
+# ViewSet for Task
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()  # All tasks
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+
+    def get_queryset(self):
+        """Override to filter tasks based on the logged-in user"""
+        return Task.objects.filter(user=self.request.user)  # Filter tasks by user
+
+    def perform_create(self, serializer):
+        """Override to automatically assign the logged-in user"""
+        serializer.save(user=self.request.user)  # Assign logged-in user to the task
+
+
+# Custom Token View
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
+# Login View
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -48,8 +70,8 @@ class LoginAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# Logout View
 class LogoutView(APIView):
-    authentication_classes = []    # Disables JWTAuthentication for this view
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -63,104 +85,15 @@ class LogoutView(APIView):
         except Exception:
             return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
-class UserCreateAPIView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class UserListAPIView(APIView):
+
+# User Registration View (outside of viewsets)
+class UserRegistrationView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
-
-
-class UserDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-
-class UserUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def put(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        if user != request.user:
-            return Response({"error": "You are not allowed to update this user."}, status=status.HTTP_403_FORBIDDEN)
-        serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        if user != request.user:
-            return Response({"error": "You are not allowed to delete this user."}, status=status.HTTP_403_FORBIDDEN)
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class TaskListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        tasks = Task.objects.filter(user=request.user)  # Filter tasks by logged-in user
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
-
-
-class TaskDetailAPIView(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request, task_id):
-        task = get_object_or_404(Task, id=task_id, user=request.user)  # Ensure task belongs to logged-in user
-        serializer = TaskSerializer(task)
-        return Response(serializer.data)
-
-
-class TaskCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
-        serializer = TaskSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)  # Assign logged-in user to the task
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class TaskUpdateAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def put(self, request, task_id):
-        task = get_object_or_404(Task, id=task_id, user=request.user)  # Ensure task belongs to logged-in user
-        if task.status == 'Completed' and request.data.get('status') != 'Pending':
-            return Response({"error": "Cannot change status of a completed task."}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = TaskSerializer(task, data=request.data)
+        serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-class TaskDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, task_id):
-        task = get_object_or_404(Task, id=task_id, user=request.user)  # Ensure task belongs to logged-in user
-        task.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
