@@ -17,3 +17,9 @@ A user should have a unique Username, Email, and Password.
 Ensure that each user can manage their own tasks and has no access to tasks of other users. 
 
 
+chalengis : raise e.__class__(
+                   "Field '%s' expected a number but got %r." % (self.name, value),
+                  ) from e
+TypeError: Field 'id' expected a number but got datetime.datetime(2025, 3, 25, 7, 14, 23, 302125, tzinfo=datetime.timezone.utc).
+
+fixed: by delating  database and using this asginment for user:user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks', null=True, blank=True)
