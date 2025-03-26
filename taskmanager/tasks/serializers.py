@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Task
+from .models import Task,Project, Tag, TaskTag, Comment, TaskHistory
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -48,8 +48,38 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
     
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ['id', 'name', 'description', 'start_date', 'end_date']
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
+
 class TaskSerializer(serializers.ModelSerializer):
     user=UserSerializer(read_only=True)
     class Meta:
         model = Task
         fields = '__all__'  # or you can list specific fields like ['id', 'title', 'description', 'completed']
+
+
+class TaskTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskTag
+        fields = ['id', 'task', 'tag']
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'task', 'user', 'text', 'created_at']
+
+class TaskHistorySerializer(serializers.ModelSerializer):
+    changed_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = TaskHistory
+        fields = ['id', 'task', 'change_description', 'changed_by', 'changed_at']

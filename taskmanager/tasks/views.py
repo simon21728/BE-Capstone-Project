@@ -5,8 +5,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Task
+from .models import Task,Task, Project, Tag, TaskTag, Comment, TaskHistory
 from .serializers import TaskSerializer, UserSerializer, LoginSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer
+from .serializers import ProjectSerializer, TagSerializer, TaskTagSerializer, CommentSerializer, TaskHistorySerializer
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -27,7 +28,17 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)  # Only return the logged-in user
 
+class ProjectViewSet(viewsets.ModelViewSet):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
 
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticated]
+   
 # ViewSet for Task
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()  # All tasks
@@ -42,7 +53,25 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Override to automatically assign the logged-in user"""
         serializer.save(user=self.request.user)  # Assign logged-in user to the task
 
+class TaskTagViewSet(viewsets.ModelViewSet):
+    queryset = TaskTag.objects.all()
+    serializer_class = TaskTagSerializer
+    permission_classes = [IsAuthenticated]
 
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class TaskHistoryViewSet(viewsets.ModelViewSet):
+    queryset = TaskHistory.objects.all()
+    serializer_class = TaskHistorySerializer
+    permission_classes = [IsAuthenticated]
 # Custom Token View
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -85,11 +114,9 @@ class LogoutView(APIView):
         except Exception:
             return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 # User Registration View (outside of viewsets)
 class UserRegistrationView(APIView):
     permission_classes = [AllowAny]
-
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():

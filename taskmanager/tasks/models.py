@@ -35,3 +35,41 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+class Project(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    def __str__(self):
+        return self.name
+    
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name   
+    
+class TaskTag(models.Model):
+    task = models.ForeignKey(Task, related_name='tags', on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, related_name='tasks', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.task.title} - {self.tag.name}'
+class Comment(models.Model):
+    task = models.ForeignKey(Task, related_name='comments', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='comments', on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Comment by {self.user.username} on {self.task.title}'
+    
+class TaskHistory(models.Model):
+    task = models.ForeignKey(Task, related_name='history', on_delete=models.CASCADE)
+    change_description = models.TextField()
+    changed_by = models.ForeignKey(User, related_name='task_changes', on_delete=models.CASCADE)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Change on {self.task.title} by {self.changed_by.username}'   
