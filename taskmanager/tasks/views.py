@@ -8,11 +8,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Task,Task, Project, Tag, TaskTag, Comment, TaskHistory
 from .serializers import TaskSerializer, UserSerializer, LoginSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer
 from .serializers import ProjectSerializer, TagSerializer, TaskTagSerializer, CommentSerializer, TaskHistorySerializer
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework.routers import DefaultRouter
 
 
@@ -80,6 +78,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 # Login View
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -117,6 +116,7 @@ class LogoutView(APIView):
 # User Registration View (outside of viewsets)
 class UserRegistrationView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
