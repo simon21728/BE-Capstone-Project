@@ -2,16 +2,16 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
-from django.contrib.auth import authenticate, login, logout
+from rest_framework.permissions import IsAuthenticated, AllowAny
+#from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Task,Task, Project, Tag, TaskTag, Comment, TaskHistory
+from .models import Task, Project, Tag, TaskTag, Comment, TaskHistory
 from .serializers import TaskSerializer, UserSerializer, LoginSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer
 from .serializers import ProjectSerializer, TagSerializer, TaskTagSerializer, CommentSerializer, TaskHistorySerializer
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework import serializers
-from rest_framework.routers import DefaultRouter
+from django.contrib.auth import authenticate
+
 
 
 # ViewSet for User
@@ -55,6 +55,8 @@ class TaskTagViewSet(viewsets.ModelViewSet):
     queryset = TaskTag.objects.all()
     serializer_class = TaskTagSerializer
     permission_classes = [IsAuthenticated]
+    #authentication_classes = [SessionAuthentication]
+    
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -87,7 +89,7 @@ class LoginAPIView(APIView):
                                 email=serializer.validated_data['email'], 
                                 password=serializer.validated_data['password'])
             if user:
-                login(request, user)
+                #login(request, user)
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     "access": str(refresh.access_token),
